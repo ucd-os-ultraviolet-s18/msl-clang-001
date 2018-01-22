@@ -1,26 +1,44 @@
+//	Team: Ultraviolet (Kelsey Rocklin & John Williams)
+//	Operating Systems
+//  Programming assignment 1
+
+
 #include <stdio.h>
 #include <stdlib.h>
 
 typedef struct Noder Noder;
 
 struct Noder{
-    char word[10];// assume that the word is less that 15 characters long
+    char word[15];// assume that the word is less that 15 characters long
     int count;
     Noder* leftPtr;
     Noder* rightPtr;
 
 };
-const char input1[] = "input01.txt";
-const char input2[] = "input02.txt";
-const char output1[] = "outputStudent01.txt";
-const char output2[] = "outputStudent02.txt";
-//char* ReadFile(char fileName[], char *buffer, long * length);
-//FILE * ReadFile(FILE *InputFile , char *buffer, long * position);
+
+// function declarations
+
+// sees which word comes first in the given character arrays
 int compare(char left[],char right[] );
+
+// reads the file and automatically adds words to the tree
 Noder* read(FILE *file , char *buffer, long * position,  Noder * head);
-Noder * searchTree(Noder * head, char item[]);
+
+// searches the tree for the given word
+int searchTree(Noder * head, char item[]);
+
+// finds the length of a word in a character array
 int length( char item[]);
+
+// inserts a given node into the tree using the head and new word
+// (increments the count if the word exists already)
 void insert(Noder * head, char item[]);
+
+// prints the words to the console and a file
+void printReport(FILE* outFile, Noder* root);
+
+// deletes the tree and frees the memory
+void deleteTree(Noder* root);
 
 int main(int argc, char **argv) {
 
@@ -28,28 +46,62 @@ int main(int argc, char **argv) {
     char *buffer = NULL;
     long * length;
     Noder  * head = NULL;
-    FILE *InputFile = fopen("input02.txt", "r");
-    head = read(InputFile,buffer,length, head);
+    FILE *inputFile = fopen("input01.txt", "r");
+    FILE *outputFile = fopen("myoutput01.txt", "w");
 
+    if (inputFile == NULL || outputFile ==NULL)
+    {
+        printf("ERROR OPENING FILE\n\n\n");
+    }
 
-    int some = 3;
-if there are repeats we cannot add them to the tree. instead we must increment the count.
-            implement a search function
-            implement a inorder traversal
+    head = read(inputFile,buffer,length, head);
+    fclose(inputFile);
 
+    printReport(outputFile, head);
 
+    // delete the tree after we print the stuff out
+    deleteTree(head);
+    head = NULL;
 
-//    some = compare("this", "that");
-//    if (some == 0) {
-//        printf("%s comes before %s", "that","this");
-//    }
-//    else if (some == 1) {
-//        printf("%s comes before %s", "this","that");
-//    }
-//    else {
-//        printf("they are equal ");
-//    }
+    printf("Tree deleted.\n");
+
     exit(0);
+}
+
+// recursive function to delete the tree and free the memory
+void deleteTree(Noder* root) {
+
+    if (root == NULL) return; // base case
+
+    deleteTree(root->leftPtr);
+    deleteTree(root->rightPtr);
+
+    free(root);
+}
+
+// prints a repor of the words in the input file to the output file
+// prints like this:
+// word: count
+// arguments are the root of the tree and the output file
+// uses an inorder traversal to print in order
+void printReport(FILE* outFile, Noder* root) {
+
+    if (root != NULL) {
+
+        printReport(outFile, root->leftPtr);
+
+        // print everything to console
+        printf("%s", root->word);
+        printf(": ");
+        printf("%i\n", root->count);
+
+        // print to file
+        fprintf(outFile, "%s", root->word);
+        fprintf(outFile, ": ");
+        fprintf(outFile, "%i\n", root->count);
+
+        printReport(outFile, root->rightPtr);
+    }
 }
 
 int length( char item[]){
@@ -70,6 +122,8 @@ int length( char item[]){
 // I have 4 cases outlined. they are based on weather the node contains something in its
 // childrens node and weather we need to go left or right.
 void insert(Noder * head, char item[]){
+    int direction = compare(head->word,item);
+    // if the current root is the word
 
     if (head->word[0] == '\0')// if the signal for the head node is present then populate the head node
     {
@@ -85,31 +139,28 @@ void insert(Noder * head, char item[]){
             head->word[i] = item[i];
         }
         head->word[size] = '\0';
-        puts(head->word);
+        //puts(head->word);
         head->count = 1;
         return;
     }
-    int direction = compare(head->word,item);
-    // if the current root is the word
-    if (direction ==2)
+    else if (direction ==2)
     {
         head->count++;// if found increment the count on it
+        return;
     }
-
-
-    // else if the head's word comes first alphabetically
-    if (direction ==1 && head->rightPtr != NULL)
+        // else if the head's word comes first alphabetically
+    else if (direction ==1 && head->rightPtr != NULL)
     {
         return insert(head->rightPtr, item);// search right
     }
-    // else if the word comes first
-    if ( direction==0 && head->leftPtr!= NULL)
+        // else if the word comes first
+    else if ( direction==0 && head->leftPtr!= NULL)
     {
         return insert(head->leftPtr, item);// search left
     }
 
-    // otherwise we are at null so make a new node and insert the item
-    if (direction==1 && head->rightPtr == NULL)// if the word is alphabetically less than the parent and the node is available
+        // otherwise we are at null so make a new node and insert the item
+    else if (direction==1 && head->rightPtr == NULL)// if the word is alphabetically less than the parent and the node is available
     {
         head->rightPtr = (Noder *)malloc(sizeof(Noder));
         head->rightPtr->rightPtr = NULL;
@@ -120,10 +171,11 @@ void insert(Noder * head, char item[]){
         for (int i = 0; i < size; i++) {
             head->rightPtr->word[i] = item[i];
         }
+        head->rightPtr->word[size] = '\0';
 
         return;
     }
-    if ( direction==0 && head->leftPtr == NULL)// if the word is alphabetically greater than the parent and the node is available
+    else if ( direction==0 && head->leftPtr == NULL)// if the word is alphabetically greater than the parent and the node is available
     {
         head->leftPtr = (Noder *)malloc(sizeof(Noder));
         head->leftPtr->rightPtr = NULL;
@@ -134,6 +186,7 @@ void insert(Noder * head, char item[]){
         for (int i = 0; i < size; i++) {
             head->leftPtr->word[i] = item[i];
         }
+        head->leftPtr->word[size] = '\0';
         return;
     }
 }
@@ -146,6 +199,8 @@ void insert(Noder * head, char item[]){
 // right word is in front of the left word.
 int compare(char left[],char right[] ){
     // determine the shorter of the two.
+
+
     int length = 0;
     int i = 0;
     while (1 == 1){
@@ -171,71 +226,61 @@ int compare(char left[],char right[] ){
             return 1;
         }
     }
-        return 2;
-
+    return 2;
 }
-
-
-// weird function that i developed and deleted
-
 
 //Searches for the node in the tree by using the compare function.
 //if this function doesn't find the word in the tree them it returns
 //NULL. Otherwise it returns the pointer to the node.
-//Noder * searchTree(Noder  * head, char item[]){
-//    if (head == NULL)
-//    {
-//        return head;
-//    }
-//
-//    // 0 means that LEFT operand comes first alphabetically
-//    // 1 means that RIGHT operand comes first alphabetically
-//    // 2 means they're equal.
-//
-//    int direction = compare(head->word,item);
-//    // if the current root is the word
-//    if (direction ==2)
-//    {
-//        head->count++;// if found increment the count on it
-//        return head;
-//    }
-//    // else if the head's word comes first alphabetically
-//    if (direction ==1 && head->rightPtr != NULL)
-//    {
-//        return searchTree(head->rightPtr, item);// search right
-//    }
-//    // else if the word comes first
-//    if ( direction==0 && head->leftPtr!= NULL)
-//    {
-//        return searchTree(head->leftPtr, item);// search left
-//    }
-//
-//    // otherwise we didn't find it
-//    if (direction==1 && head->rightPtr == NULL)
-//    {
-//        return NULL;
-//    }
-//    if ( direction==0 && head->leftPtr!= NULL)
-//    {
-//        return NULL;
-//    }
-//}
+int searchTree(Noder  * head, char item[]){
+    if (head == NULL ||head->word == "\0")
+    {
+        return 0;
+    }
+
+    int direction = compare(head->word,item);
+    // if the current root is the word
+    if (direction ==2)
+    {
+        //head->count++;// if found increment the count on it
+        return head->count;
+    }
+    // else if the head's word comes first alphabetically
+    if (direction ==1 && head->rightPtr != NULL)
+    {
+        return searchTree(head->rightPtr, item);// search right
+    }
+    // else if the word comes first
+    if ( direction==0 && head->leftPtr!= NULL)
+    {
+        return searchTree(head->leftPtr, item);// search left
+    }
+
+    // otherwise we didn't find it
+    if (direction==1 && head->rightPtr == NULL)
+    {
+        return NULL;
+    }
+    // otherwise we didn't find it
+    if ( direction==0 && head->leftPtr!= NULL)
+    {
+        return NULL;
+    }
+}
 
 
 
 
 Noder* read(FILE *file , char *buffer, long * position, Noder * head){
-                char word[1024];
-                /* assumes no word exceeds length of 1023 */
-                //https://stackoverflow.com/questions/16400886/reading-from-a-file-word-by-word
+    char word[1024];
+    /* assumes no word exceeds length of 1023 */
+    //https://stackoverflow.com/questions/16400886/reading-from-a-file-word-by-word
 
-                head = (struct Noder *)malloc(sizeof(struct Noder));
-                head->word[0] = '\0';
-                while (fscanf(file , " %1023s", word) == 1) {
-                    puts(word);
-                    // search for the word
-     //               head = searchTree( head, word);
-                    insert(head ,word);
-                }
-            return head;
-        }
+    head = (struct Noder *)malloc(sizeof(struct Noder));
+    head->word[0] = '\0';
+    while (fscanf(file , " %1023s", word) == 1) {
+        //head = searchTree( head, word);
+        insert(head ,word);
+    }
+    return head;
+}
