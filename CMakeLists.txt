@@ -1,6 +1,8 @@
-cmake_minimum_required(VERSION 3.9)
-project(OS_PA1 C)
+cmake_minimum_required(VERSION 3.6)
+project(msl_clang_001)
 
-set(CMAKE_C_STANDARD 99)
+set(CMAKE_CXX_STANDARD 11)
 
-add_executable(OS_PA1 main.c)
+set(SOURCE_FILES main.c)
+
+add_executable(msl_clang_001 ${SOURCE_FILES})

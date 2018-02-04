@@ -1,6 +1,7 @@
 //	Team: Ultraviolet (Kelsey Rocklin & John Williams)
 //	Operating Systems
 //  Programming assignment 1
+//
 
 
 #include <stdio.h>
@@ -9,105 +10,51 @@
 typedef struct Noder Noder;
 
 struct Noder{
-    char word[15];// assume that the word is less that 15 characters long
+    char word[10];// assume that the word is less that 15 characters long
     int count;
     Noder* leftPtr;
     Noder* rightPtr;
-
 };
 
-// function declarations
-
-// sees which word comes first in the given character arrays
 int compare(char left[],char right[] );
-
-// reads the file and automatically adds words to the tree
-Noder* read(FILE *file , char *buffer, long * position,  Noder * head);
-
-// searches the tree for the given word
+Noder* read(FILE *file ,  Noder * head);
 int searchTree(Noder * head, char item[]);
-
-// finds the length of a word in a character array
 int length( char item[]);
-
-// inserts a given node into the tree using the head and new word
-// (increments the count if the word exists already)
 void insert(Noder * head, char item[]);
-
-// prints the words to the console and a file
-void printReport(FILE* outFile, Noder* root);
-
-// deletes the tree and frees the memory
-void deleteTree(Noder* root);
+void write(Noder *head, FILE* output);
+void deleteTree(Noder *head);
 
 int main(int argc, char **argv) {
 
 
-    char *buffer = NULL;
-    long * length;
-    Noder  * head = NULL;
-    FILE *inputFile = fopen("input01.txt", "r");
-    FILE *outputFile = fopen("myoutput01.txt", "w");
+    Noder  * head = NULL; // head pointer to the tree
+    FILE *inputFile = fopen("input02.txt", "r");// open the input and the output file
+    FILE *outputFile = fopen("OUTPUT.txt", "w");
 
-    if (inputFile == NULL || outputFile ==NULL)
+    if (inputFile == NULL || outputFile ==NULL)// check to see if either errored out and if so exit
     {
         printf("ERROR OPENING FILE\n\n\n");
+        exit(0);
     }
 
-    head = read(inputFile,buffer,length, head);
-    fclose(inputFile);
+    head = read(inputFile, head);// read in the file and put each word in a distinct node
+    fclose(inputFile);// close the file
+    write(head, outputFile);// write the tree to the output file
+    fclose(outputFile);// close the file
 
-    printReport(outputFile, head);
 
-    // delete the tree after we print the stuff out
+
     deleteTree(head);
-    head = NULL;
-
-    printf("Tree deleted.\n");
-
+ head = NULL;
     exit(0);
 }
-
-// recursive function to delete the tree and free the memory
-void deleteTree(Noder* root) {
-
-    if (root == NULL) return; // base case
-
-    deleteTree(root->leftPtr);
-    deleteTree(root->rightPtr);
-
-    free(root);
-}
-
-// prints a repor of the words in the input file to the output file
-// prints like this:
-// word: count
-// arguments are the root of the tree and the output file
-// uses an inorder traversal to print in order
-void printReport(FILE* outFile, Noder* root) {
-
-    if (root != NULL) {
-
-        printReport(outFile, root->leftPtr);
-
-        // print everything to console
-        printf("%s", root->word);
-        printf(": ");
-        printf("%i\n", root->count);
-
-        // print to file
-        fprintf(outFile, "%s", root->word);
-        fprintf(outFile, ": ");
-        fprintf(outFile, "%i\n", root->count);
-
-        printReport(outFile, root->rightPtr);
-    }
-}
-
+// Function used to find the length of a word
+// this is used to give us the parameters for a FOR loop when we
+// were looking to copy a word from the input to a file
 int length( char item[]){
     int length = 0;
     while (1 == 1){
-        if (item[length] != '\0')
+        if (item[length] != '\0')// seek the null terminator
         {
             length++;
         }
@@ -115,12 +62,46 @@ int length( char item[]){
         {return length;}
     }
 }
-
-
-// if the word isnt found in the search then we need to insert it
+//  function implements a dealocation procedure via depth first traversal
+// and the free command using recursion
+void deleteTree(Noder *head)
+{
+    if (head->leftPtr != NULL)// search left
+    {
+        deleteTree(head->leftPtr);
+    }
+    if (head->rightPtr != NULL)// search right
+    {
+        deleteTree(head->rightPtr);
+    }
+    if (head != NULL)// if head isnt null then free memory
+    {
+        free(head);
+    }
+}
+//  Procedure Writes the tree, using an in-order traversal
+//  and recursion.
+void write(Noder *head, FILE * outputFile)// need a file pointer here as well
+{
+    if (head->leftPtr != NULL)// go left
+    {
+        write(head->leftPtr, outputFile);
+    }
+    if (head != NULL)// visit parent
+    {
+        //printf("%s ~~ %d \n", head->word, head->count);
+        fprintf(outputFile, "%s: %d\n",head->word, head->count );
+    }
+    if (head->rightPtr != NULL)// go right
+        {
+            write(head->rightPtr, outputFile);
+        }
+}
+// this procedure
 // here we use recursion and the compare function to build the tree.
 // I have 4 cases outlined. they are based on weather the node contains something in its
 // childrens node and weather we need to go left or right.
+// we determine direction from the compare function
 void insert(Noder * head, char item[]){
     int direction = compare(head->word,item);
     // if the current root is the word
@@ -148,18 +129,18 @@ void insert(Noder * head, char item[]){
         head->count++;// if found increment the count on it
         return;
     }
-        // else if the head's word comes first alphabetically
+    // else if the head's word comes first alphabetically
     else if (direction ==1 && head->rightPtr != NULL)
     {
         return insert(head->rightPtr, item);// search right
     }
-        // else if the word comes first
+    // else if the word comes first
     else if ( direction==0 && head->leftPtr!= NULL)
     {
         return insert(head->leftPtr, item);// search left
     }
 
-        // otherwise we are at null so make a new node and insert the item
+    // otherwise we are at null so make a new node and insert the item
     else if (direction==1 && head->rightPtr == NULL)// if the word is alphabetically less than the parent and the node is available
     {
         head->rightPtr = (Noder *)malloc(sizeof(Noder));
@@ -198,9 +179,8 @@ void insert(Noder * head, char item[]){
 // in front of the right parameter. otherwise it returns a 1 if the
 // right word is in front of the left word.
 int compare(char left[],char right[] ){
+
     // determine the shorter of the two.
-
-
     int length = 0;
     int i = 0;
     while (1 == 1){
@@ -219,14 +199,15 @@ int compare(char left[],char right[] ){
         }
         else if ((int)left[i] > (int)right[i])
         {
-            return 0;
+            return 0;// signifying that the right word comes first alphabetically
         }
 
         else if ((int)left[i] < (int)right[i]){
-            return 1;
+            return 1;// signifying that the left word comes first alphabetically
         }
     }
-    return 2;
+        return 2;// signifying that the words are equal alphabetically.
+
 }
 
 //Searches for the node in the tree by using the compare function.
@@ -270,17 +251,18 @@ int searchTree(Noder  * head, char item[]){
 
 
 
+// function reads file and process the words into the tree
+// returns the head pointer to the main procedure.
+Noder* read(FILE *file, Noder * head){
+                char word[1024];
+                /* assumes no word exceeds length of 1023 */
+                //https://stackoverflow.com/questions/16400886/reading-from-a-file-word-by-word
 
-Noder* read(FILE *file , char *buffer, long * position, Noder * head){
-    char word[1024];
-    /* assumes no word exceeds length of 1023 */
-    //https://stackoverflow.com/questions/16400886/reading-from-a-file-word-by-word
-
-    head = (struct Noder *)malloc(sizeof(struct Noder));
-    head->word[0] = '\0';
-    while (fscanf(file , " %1023s", word) == 1) {
-        //head = searchTree( head, word);
-        insert(head ,word);
-    }
-    return head;
-}
+                head = (struct Noder *)malloc(sizeof(struct Noder));
+                head->word[0] = '\0';
+                while (fscanf(file , " %1023s", word) == 1) {
+                    //head = searchTree( head, word);
+                    insert(head ,word);
+                }
+            return head;
+        }
